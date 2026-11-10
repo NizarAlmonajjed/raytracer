@@ -62,7 +62,7 @@ With only 5 objects the BVH is *slower* (about 1.3x): the extra box tests and
 virtual calls cost more than simply testing 5 spheres. A BVH pays off when
 there are many objects.
 
-Why the gain on the random scene is ~5x rather than closer to
-479 / log2(479): the ground is a sphere of radius 1000, so its bounding box
+Likely reasons the gain on the random scene is ~5x rather than closer to
+479 / log2(479) (not separately measured): the ground is a sphere of radius 1000, so its bounding box
 overlaps everything and it is tested near the root for every ray; and most
 rays hit the ground or several small spheres along their bounces.
