@@ -17,6 +17,9 @@ endif()
 # All ray tracer logic lives in a library so both the executable and the tests
 # can link against the same code. main.cpp stays tiny.
 add_library(rtcore
+  src/camera.cpp
+  src/hittable.cpp
+  src/hittable_list.cpp
   src/image.cpp
   src/sphere.cpp
   src/util.cpp
@@ -46,6 +49,8 @@ if(RT_BUILD_TESTS)
   enable_testing()
 
   add_executable(rt_tests
+    tests/camera_test.cpp
+    tests/hittable_test.cpp
     tests/image_test.cpp
     tests/ray_test.cpp
     tests/sphere_test.cpp

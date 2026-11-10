@@ -1,16 +1,37 @@
 #include "rt/sphere.h"
 
 #include <cmath>
+#include <stdexcept>
 
 namespace rt {
+
+Sphere::Sphere(const Point3& center, double radius)
+    : center_{center}, radius_{radius} {
+    if (radius <= 0.0) {
+        throw std::invalid_argument("Sphere radius must be positive");
+    }
+}
+
+std::optional<HitRecord> Sphere::hit(const Ray& ray, double t_min,
+                                     double t_max) const {
+    const auto t = intersect(*this, ray, t_min, t_max);
+    if (!t) {
+        return std::nullopt;
+    }
+    HitRecord rec;
+    rec.t = *t;
+    rec.point = ray.at(*t);
+    rec.set_face_normal(ray, sphere_normal(*this, rec.point));
+    return rec;
+}
 
 std::optional<double> intersect(const Sphere& sphere, const Ray& ray,
                                 double t_min, double t_max) {
     // Coefficients of a t^2 - 2h t + c = 0 (the "half-b" form: h = -b/2).
-    const Vec3 oc = sphere.center - ray.origin();
+    const Vec3 oc = sphere.center() - ray.origin();
     const double a = ray.direction().length_squared();
     const double h = dot(ray.direction(), oc);
-    const double c = oc.length_squared() - sphere.radius * sphere.radius;
+    const double c = oc.length_squared() - sphere.radius() * sphere.radius();
 
     const double discriminant = h * h - a * c;
     if (discriminant < 0.0) {
@@ -32,7 +53,7 @@ std::optional<double> intersect(const Sphere& sphere, const Ray& ray,
 }
 
 Vec3 sphere_normal(const Sphere& sphere, const Point3& point) {
-    return (point - sphere.center) / sphere.radius;
+    return (point - sphere.center()) / sphere.radius();
 }
 
 }  // namespace rt
