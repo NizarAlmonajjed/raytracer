@@ -18,6 +18,7 @@ endif()
 # can link against the same code. main.cpp stays tiny.
 add_library(rtcore
   src/image.cpp
+  src/sphere.cpp
   src/util.cpp
 )
 target_include_directories(rtcore PUBLIC ${PROJECT_SOURCE_DIR}/include)
@@ -47,6 +48,7 @@ if(RT_BUILD_TESTS)
   add_executable(rt_tests
     tests/image_test.cpp
     tests/ray_test.cpp
+    tests/sphere_test.cpp
     tests/util_test.cpp
     tests/vec3_test.cpp
   )

@@ -1,34 +1,46 @@
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include "rt/image.h"
 #include "rt/ray.h"
+#include "rt/sphere.h"
 #include "rt/vec3.h"
 
 namespace {
 
-// The colour a ray "sees". With no objects in the scene yet, every ray sees
-// sky: blend from white at the bottom to light blue at the top, based on how
-// steeply the ray points up.
-rt::Color ray_color(const rt::Ray& ray) {
+constexpr double kInfinity = std::numeric_limits<double>::infinity();
+
+// The colour a ray "sees".
+rt::Color ray_color(const rt::Ray& ray, const rt::Sphere& sphere) {
+    // `if (init; condition)` (C++17): `t` only exists inside this if-statement.
+    // An optional converts to true when it holds a value.
+    if (const auto t = rt::intersect(sphere, ray, 0.0, kInfinity); t) {
+        const rt::Vec3 n = rt::sphere_normal(sphere, ray.at(*t));
+        // Map each normal component from [-1, 1] to a colour in [0, 1].
+        return 0.5 * (n + rt::Color{1.0, 1.0, 1.0});
+    }
+
+    // Missed everything: sky gradient, white at the bottom to blue at the top.
     const rt::Vec3 dir = rt::unit_vector(ray.direction());
-    const double a = 0.5 * (dir.y + 1.0);  // map y from [-1, 1] to [0, 1]
-    const rt::Color white{1.0, 1.0, 1.0};
-    const rt::Color sky_blue{0.5, 0.7, 1.0};
-    return (1.0 - a) * white + a * sky_blue;  // linear interpolation (lerp)
+    const double a = 0.5 * (dir.y + 1.0);
+    return (1.0 - a) * rt::Color{1.0, 1.0, 1.0} + a * rt::Color{0.5, 0.7, 1.0};
 }
 
 }  // namespace
 
 int main(int argc, char* argv[]) {
-    const std::string out_path = argc > 1 ? argv[1] : "renders/gradient.ppm";
+    const std::string out_path = argc > 1 ? argv[1] : "renders/sphere.ppm";
 
     // ---- Image ----
     const double aspect_ratio = 16.0 / 9.0;
     const int width = 400;
     const int height = static_cast<int>(width / aspect_ratio);
     rt::Image image{width, height};
+
+    // ---- Scene ----
+    const rt::Sphere sphere{rt::Point3{0.0, 0.0, -1.0}, 0.5};
 
     // ---- Camera ----
     // The eye sits at the origin looking down -z. One unit in front of it is a
@@ -51,7 +63,7 @@ int main(int argc, char* argv[]) {
             const double v = (y + 0.5) / height;
             const rt::Point3 pixel = top_left + u * horizontal + v * vertical;
             const rt::Ray ray{eye, pixel - eye};
-            image.at(x, y) = ray_color(ray);
+            image.at(x, y) = ray_color(ray, sphere);
         }
     }
 
