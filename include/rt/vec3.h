@@ -83,11 +83,9 @@ inline double dot(const Vec3& a, const Vec3& b) {
 //
 // Example: cross({1,0,0}, {0,1,0}) == {0,0,1}
 inline Vec3 cross(const Vec3& a, const Vec3& b) {
-    // TODO(you): implement using the formula above.
-    // Tests: tests/vec3_test.cpp, the "Cross" tests.
-    (void)a;
-    (void)b;
-    return {};
+    return {a.y * b.z - a.z * b.y,
+            a.z * b.x - a.x * b.z,
+            a.x * b.y - a.y * b.x};
 }
 
 // Returns a vector with the same direction as v and length 1.
