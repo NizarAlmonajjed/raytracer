@@ -1,0 +1,12 @@
+# Build output
+build/
+cmake-build-*/
+
+# Rendered PPMs are large; we'll commit PNGs for the README later
+renders/*.ppm
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+compile_commands.json
