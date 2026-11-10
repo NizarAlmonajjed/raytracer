@@ -17,6 +17,7 @@ endif()
 # All ray tracer logic lives in a library so both the executable and the tests
 # can link against the same code. main.cpp stays tiny.
 add_library(rtcore
+  src/image.cpp
   src/util.cpp
 )
 target_include_directories(rtcore PUBLIC ${PROJECT_SOURCE_DIR}/include)
@@ -44,7 +45,10 @@ if(RT_BUILD_TESTS)
   enable_testing()
 
   add_executable(rt_tests
+    tests/image_test.cpp
+    tests/ray_test.cpp
     tests/util_test.cpp
+    tests/vec3_test.cpp
   )
   target_link_libraries(rt_tests PRIVATE rtcore GTest::gtest_main)
   target_compile_options(rt_tests PRIVATE -Wall -Wextra -Wpedantic)
