@@ -28,16 +28,9 @@ int parse_positive_int(const std::string& flag, const std::string& text) {
 }  // namespace
 
 int default_thread_count() {
-    // TODO(you): fill in the blank, then delete `return 1;` below.
-    //
-    //   const unsigned int n = std::thread::hardware_concurrency();
-    //   return n == 0 ? ___ : static_cast<int>(n);
-    //
-    // hardware_concurrency() returns the number of hardware threads, but is
-    // allowed to return 0 when it can't find out. What should we use then?
-    //
-    // Tests: tests/options_test.cpp, the "DefaultThreads" tests.
-    return 1;
+    // hardware_concurrency() may return 0 if it can't tell; 1 always works.
+    const unsigned int n = std::thread::hardware_concurrency();
+    return n == 0 ? 1 : static_cast<int>(n);
 }
 
 Options parse_options(int argc, const char* const argv[]) {
