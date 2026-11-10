@@ -32,3 +32,37 @@ Output is bit-identical for every thread count.
 
 Going from 4 to 8 threads gives less than 2x because the extra 4 cores are the
 M3's slower efficiency cores.
+
+## Milestone 6: bounding volume hierarchy (2026-11-10)
+
+Same machine and build as above. `--no-bvh` renders with the plain object list
+(every ray tests every object). The BVH and no-BVH images were compared and are
+byte-for-byte identical. BVH build time is not included (it printed as 0.000 s).
+
+### Random scene: 479 spheres, 400x225, 100 samples/pixel, max depth 50
+
+| Threads | Acceleration | Runs (s)               | Median (s) | Speedup from BVH |
+|--------:|--------------|------------------------|-----------:|-----------------:|
+| 1       | none (list)  | 19.404, 19.763, 19.388 | 19.404     |                  |
+| 1       | BVH          | 4.485, 4.407, 4.418    | 4.418      | 4.39x            |
+| 8       | none (list)  | 4.360, 4.576, 4.704    | 4.576      |                  |
+| 8       | BVH          | 0.871, 0.864, 0.862    | 0.864      | 5.30x            |
+
+Combined, BVH + 8 threads is 22.5x faster than the single-threaded list
+(19.404 s -> 0.864 s).
+
+### Materials scene: 5 spheres, 400x225, 100 samples/pixel, max depth 50, 8 threads
+
+| Acceleration | Runs (s)            | Median (s) |
+|--------------|---------------------|-----------:|
+| none (list)  | 0.344, 0.344, 0.344 | 0.344      |
+| BVH          | 0.448, 0.456, 0.452 | 0.452      |
+
+With only 5 objects the BVH is *slower* (about 1.3x): the extra box tests and
+virtual calls cost more than simply testing 5 spheres. A BVH pays off when
+there are many objects.
+
+Why the gain on the random scene is ~5x rather than closer to
+479 / log2(479): the ground is a sphere of radius 1000, so its bounding box
+overlaps everything and it is tested near the root for every ray; and most
+rays hit the ground or several small spheres along their bounces.

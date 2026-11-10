@@ -5,32 +5,18 @@
 #include <memory>
 #include <stdexcept>
 
+#include "rt/bvh.h"
 #include "rt/camera.h"
-#include "rt/hittable_list.h"
 #include "rt/image.h"
-#include "rt/material.h"
 #include "rt/options.h"
-#include "rt/sphere.h"
+#include "rt/scenes.h"
 
 namespace {
 
-// Ground, a hollow glass ball, a matte ball and a fuzzy gold ball.
-rt::HittableList build_scene() {
-    // Each material is created once and shared by every sphere that uses it.
-    const auto ground = std::make_shared<rt::Lambertian>(rt::Color{0.8, 0.8, 0.0});
-    const auto matte_blue = std::make_shared<rt::Lambertian>(rt::Color{0.1, 0.2, 0.5});
-    const auto glass = std::make_shared<rt::Dielectric>(1.5);
-    // An "air bubble" inside the glass makes it a hollow glass ball.
-    const auto bubble = std::make_shared<rt::Dielectric>(1.0 / 1.5);
-    const auto gold = std::make_shared<rt::Metal>(rt::Color{0.8, 0.6, 0.2}, 0.3);
-
-    rt::HittableList world;
-    world.add(std::make_shared<rt::Sphere>(rt::Point3{0.0, -100.5, -1.0}, 100.0, ground));
-    world.add(std::make_shared<rt::Sphere>(rt::Point3{0.0, 0.0, -1.2}, 0.5, matte_blue));
-    world.add(std::make_shared<rt::Sphere>(rt::Point3{-1.0, 0.0, -1.0}, 0.5, glass));
-    world.add(std::make_shared<rt::Sphere>(rt::Point3{-1.0, 0.0, -1.0}, 0.4, bubble));
-    world.add(std::make_shared<rt::Sphere>(rt::Point3{1.0, 0.0, -1.0}, 0.5, gold));
-    return world;
+// Seconds elapsed since `start`, measured with a clock that never jumps.
+double seconds_since(std::chrono::steady_clock::time_point start) {
+    const std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
+    return elapsed.count();
 }
 
 }  // namespace
@@ -50,37 +36,45 @@ int main(int argc, char* argv[]) {
     }
 
     // ---- Scene and camera ----
-    const rt::HittableList world = build_scene();
+    rt::Scene scene = rt::make_scene(opts.scene);
+    scene.camera.image_width = opts.width;
+    scene.camera.samples_per_pixel = opts.samples;
+    scene.camera.max_depth = opts.max_depth;
+    const rt::Camera camera{scene.camera};
 
-    rt::CameraSettings settings;  // 16:9, 90 deg FOV
-    settings.image_width = opts.width;
-    settings.samples_per_pixel = opts.samples;
-    settings.max_depth = opts.max_depth;
-    const rt::Camera camera{settings};
+    // ---- Acceleration structure ----
+    // `world` refers either to the BVH or to the plain list. Both are
+    // Hittables, so the renderer doesn't know or care which it gets.
+    std::cout << std::fixed << std::setprecision(3);
+    std::shared_ptr<rt::Hittable> bvh;
+    if (opts.use_bvh) {
+        const auto start = std::chrono::steady_clock::now();
+        bvh = rt::build_bvh(scene.world.objects());
+        std::cout << "Built BVH over " << scene.world.size() << " objects in "
+                  << seconds_since(start) << " s\n";
+    }
+    const rt::Hittable& world = opts.use_bvh ? *bvh : scene.world;
 
-    std::cout << "Rendering " << camera.image_width() << "x" << camera.image_height()
-              << ", " << opts.samples << " samples/pixel, max depth " << opts.max_depth
-              << ", " << opts.threads << " thread(s)..." << std::endl;
+    std::cout << "Rendering scene '" << opts.scene << "' (" << scene.world.size()
+              << " objects, " << (opts.use_bvh ? "BVH" : "no BVH") << "), "
+              << camera.image_width() << "x" << camera.image_height() << ", "
+              << opts.samples << " samples/pixel, max depth " << opts.max_depth << ", "
+              << opts.threads << " thread(s)..." << std::endl;
 
     // ---- Render (timed) ----
-    // steady_clock never jumps (unlike the wall clock), so it's the right
-    // clock for measuring durations.
     const auto start = std::chrono::steady_clock::now();
     const rt::Image image = camera.render(world, opts.threads);
-    const auto stop = std::chrono::steady_clock::now();
-    const std::chrono::duration<double> elapsed = stop - start;  // in seconds
-
-    std::cout << "Render time: " << std::fixed << std::setprecision(3) << elapsed.count()
-              << " s\n";
+    std::cout << "Render time: " << seconds_since(start) << " s\n";
 
     // ---- Save ----
-    std::ofstream file{opts.output};
+    const std::string out_path = opts.output_path();
+    std::ofstream file{out_path};
     if (!file) {
-        std::cerr << "Error: could not open '" << opts.output << "' for writing.\n"
+        std::cerr << "Error: could not open '" << out_path << "' for writing.\n"
                   << "Run from the project root, or pass --output PATH.\n";
         return 1;
     }
     rt::write_ppm(file, image);
-    std::cout << "Wrote " << opts.output << "\n";
+    std::cout << "Wrote " << out_path << "\n";
     return 0;
 }

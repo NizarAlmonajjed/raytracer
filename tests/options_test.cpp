@@ -14,7 +14,9 @@ TEST(Options, DefaultsWithNoArguments) {
     EXPECT_EQ(o.samples, 100);
     EXPECT_EQ(o.max_depth, 50);
     EXPECT_GE(o.threads, 1);
-    EXPECT_EQ(o.output, "renders/materials.ppm");
+    EXPECT_EQ(o.scene, "materials");
+    EXPECT_TRUE(o.use_bvh);
+    EXPECT_EQ(o.output_path(), "renders/materials.ppm");
     EXPECT_FALSE(o.show_help);
 }
 
@@ -26,7 +28,20 @@ TEST(Options, ParsesEveryFlag) {
     EXPECT_EQ(o.samples, 16);
     EXPECT_EQ(o.max_depth, 8);
     EXPECT_EQ(o.threads, 3);
-    EXPECT_EQ(o.output, "out.ppm");
+    EXPECT_EQ(o.output_path(), "out.ppm");
+}
+
+TEST(Options, SceneAndBvhFlags) {
+    const char* argv[] = {"raytracer", "--scene", "random", "--no-bvh"};
+    const rt::Options o = parse_options(4, argv);
+    EXPECT_EQ(o.scene, "random");
+    EXPECT_FALSE(o.use_bvh);
+    EXPECT_EQ(o.output_path(), "renders/random.ppm");  // follows the scene
+}
+
+TEST(Options, RejectsUnknownScene) {
+    const char* argv[] = {"raytracer", "--scene", "teapot"};
+    EXPECT_THROW(parse_options(3, argv), std::invalid_argument);
 }
 
 TEST(Options, Help) {
@@ -62,7 +77,8 @@ TEST(Options, RejectsUnknownFlag) {
 
 TEST(Options, UsageMentionsEveryFlag) {
     const std::string u = rt::usage();
-    for (const char* flag : {"--width", "--samples", "--depth", "--threads", "--output"}) {
+    for (const char* flag :
+         {"--scene", "--width", "--samples", "--depth", "--threads", "--no-bvh", "--output"}) {
         EXPECT_NE(u.find(flag), std::string::npos) << flag;
     }
 }

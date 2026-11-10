@@ -14,8 +14,15 @@ struct Options {
     int samples{100};
     int max_depth{50};
     int threads{default_thread_count()};
-    std::string output{"renders/materials.ppm"};
+    std::string scene{"materials"};
+    bool use_bvh{true};
+    std::string output;  // empty means "renders/<scene>.ppm"
     bool show_help{false};
+
+    // The output path to use: `output` if set, otherwise based on the scene.
+    std::string output_path() const {
+        return output.empty() ? "renders/" + scene + ".ppm" : output;
+    }
 };
 
 // Parses arguments like:  --width 800 --samples 200 --threads 8

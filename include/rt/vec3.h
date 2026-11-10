@@ -18,6 +18,10 @@ public:
     Vec3() = default;
     Vec3(double x_, double y_, double z_) : x{x_}, y{y_}, z{z_} {}
 
+    // Component by index: v[0] == v.x, v[1] == v.y, v[2] == v.z.
+    // Lets code loop over the three axes instead of repeating itself.
+    double operator[](int axis) const { return axis == 0 ? x : (axis == 1 ? y : z); }
+
     // Unary minus: -v
     Vec3 operator-() const { return {-x, -y, -z}; }
 

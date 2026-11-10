@@ -1,7 +1,11 @@
 #include "rt/options.h"
 
+#include <algorithm>
 #include <stdexcept>
+#include <string>
 #include <thread>
+
+#include "rt/scenes.h"
 
 namespace rt {
 
@@ -38,8 +42,13 @@ Options parse_options(int argc, const char* const argv[]) {
     for (int i = 1; i < argc; ++i) {
         const std::string arg = argv[i];
 
+        // Flags without a value.
         if (arg == "--help" || arg == "-h") {
             opts.show_help = true;
+            continue;
+        }
+        if (arg == "--no-bvh") {
+            opts.use_bvh = false;
             continue;
         }
 
@@ -57,6 +66,12 @@ Options parse_options(int argc, const char* const argv[]) {
             opts.max_depth = parse_positive_int(arg, value);
         } else if (arg == "--threads") {
             opts.threads = parse_positive_int(arg, value);
+        } else if (arg == "--scene") {
+            const auto names = scene_names();
+            if (std::find(names.begin(), names.end(), value) == names.end()) {
+                throw std::invalid_argument("unknown scene '" + value + "'");
+            }
+            opts.scene = value;
         } else if (arg == "--output") {
             opts.output = value;
         } else {
@@ -68,12 +83,18 @@ Options parse_options(int argc, const char* const argv[]) {
 
 std::string usage() {
     const Options d;  // defaults
+    std::string scenes;
+    for (const auto& name : scene_names()) {
+        scenes += (scenes.empty() ? "" : ", ") + name;
+    }
     return "Usage: raytracer [options]\n"
+           "  --scene NAME  scene to render: " + scenes + " (default " + d.scene + ")\n"
            "  --width N     image width in pixels (default " + std::to_string(d.width) + ")\n"
            "  --samples N   rays per pixel (default " + std::to_string(d.samples) + ")\n"
            "  --depth N     max bounces per ray (default " + std::to_string(d.max_depth) + ")\n"
            "  --threads N   worker threads (default " + std::to_string(d.threads) + ")\n"
-           "  --output PATH output PPM file (default " + d.output + ")\n"
+           "  --no-bvh      test every object for every ray (for benchmarking)\n"
+           "  --output PATH output PPM file (default renders/<scene>.ppm)\n"
            "  --help        show this message\n";
 }
 

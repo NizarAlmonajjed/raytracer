@@ -26,6 +26,11 @@ std::optional<HitRecord> Sphere::hit(const Ray& ray, double t_min,
     return rec;
 }
 
+AABB Sphere::bounding_box() const {
+    const Vec3 r{radius_, radius_, radius_};
+    return AABB{center_ - r, center_ + r};
+}
+
 std::optional<double> intersect(const Sphere& sphere, const Ray& ray,
                                 double t_min, double t_max) {
     // Coefficients of a t^2 - 2h t + c = 0 (the "half-b" form: h = -b/2).

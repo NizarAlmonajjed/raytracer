@@ -28,6 +28,8 @@ public:
     std::optional<HitRecord> hit(const Ray& ray, double t_min,
                                  double t_max) const override;
 
+    AABB bounding_box() const override;
+
 private:
     Point3 center_;
     double radius_;

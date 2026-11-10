@@ -2,6 +2,7 @@
 
 #include <optional>
 
+#include "rt/aabb.h"
 #include "rt/ray.h"
 #include "rt/vec3.h"
 
@@ -44,6 +45,9 @@ public:
     // Returns the closest hit with t in (t_min, t_max), or std::nullopt.
     virtual std::optional<HitRecord> hit(const Ray& ray, double t_min,
                                          double t_max) const = 0;
+
+    // A box that fully contains the object. Used to build the BVH.
+    virtual AABB bounding_box() const = 0;
 };
 
 }  // namespace rt
