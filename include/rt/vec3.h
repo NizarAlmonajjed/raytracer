@@ -107,15 +107,7 @@ inline Vec3 unit_vector(const Vec3& v) { return v / v.length(); }
 //
 // Example: reflect({1,-1,0}, {0,1,0}) == {1,1,0}
 inline Vec3 reflect(const Vec3& v, const Vec3& n) {
-    // TODO(you): fill in the blanks, then delete the (void) lines and the
-    // `return {};` below.
-    //
-    //   return v - 2.0 * dot(___, ___) * ___;
-    //
-    // Tests: tests/material_test.cpp, the "Reflect" and "MetalReflect" tests.
-    (void)v;
-    (void)n;
-    return {};
+    return v - 2.0 * dot(v, n) * n;
 }
 
 // Refracts unit direction uv through a surface with unit normal n (pointing
