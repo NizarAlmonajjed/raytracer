@@ -32,17 +32,7 @@ std::optional<double> intersect(const Sphere& sphere, const Ray& ray,
 }
 
 Vec3 sphere_normal(const Sphere& sphere, const Point3& point) {
-    // TODO(you): fill in the two blanks, then delete the (void) lines and
-    // the `return {};` below.
-    //
-    //   return (______________) / ______________;
-    //           vector from the     the sphere's
-    //           centre to point     radius
-    //
-    // Tests: tests/sphere_test.cpp, the "SphereNormal" tests.
-    (void)sphere;
-    (void)point;
-    return {};
+    return (point - sphere.center) / sphere.radius;
 }
 
 }  // namespace rt
