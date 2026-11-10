@@ -22,10 +22,14 @@ add_library(rtcore
   src/hittable_list.cpp
   src/image.cpp
   src/material.cpp
+  src/options.cpp
   src/sphere.cpp
   src/util.cpp
 )
 target_include_directories(rtcore PUBLIC ${PROJECT_SOURCE_DIR}/include)
+# std::thread needs the platform thread library (pthread on Linux).
+find_package(Threads REQUIRED)
+target_link_libraries(rtcore PUBLIC Threads::Threads)
 target_compile_options(rtcore PRIVATE -Wall -Wextra -Wpedantic)
 
 # ---- Executable --------------------------------------------------------------
@@ -54,8 +58,10 @@ if(RT_BUILD_TESTS)
     tests/hittable_test.cpp
     tests/image_test.cpp
     tests/material_test.cpp
+    tests/options_test.cpp
     tests/ray_test.cpp
     tests/sphere_test.cpp
+    tests/threading_test.cpp
     tests/util_test.cpp
     tests/vec3_test.cpp
   )

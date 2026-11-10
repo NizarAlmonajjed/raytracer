@@ -37,9 +37,16 @@ public:
     Ray ray_through(double u, double v) const;
 
     // Renders the world, averaging samples_per_pixel random rays per pixel.
-    Image render(const Hittable& world) const;
+    // Rows are shared out dynamically between `thread_count` threads (the
+    // calling thread counts as one of them). The result is identical for any
+    // thread count. Throws std::invalid_argument if thread_count < 1.
+    Image render(const Hittable& world, int thread_count = 1) const;
 
 private:
+    // Renders one row of pixels into `image`. Safe to call concurrently for
+    // DIFFERENT rows: it only reads the world and writes row y of the image.
+    void render_row(const Hittable& world, Image& image, int y) const;
+
     CameraSettings settings_;
     int image_height_;
     Point3 origin_;

@@ -1,22 +1,34 @@
 #pragma once
 
 #include <cmath>
+#include <cstdint>
 #include <random>
 
 #include "rt/vec3.h"
 
 namespace rt {
 
-// Returns a uniformly distributed random number in [0, 1).
+// The calling thread's random number generator.
 //
 // std::mt19937 is the standard Mersenne Twister generator. `thread_local`
-// gives each thread its own generator, which will matter in milestone 5
-// (sharing one generator between threads would be a data race). The fixed
-// seed makes renders reproducible run to run.
-inline double random_double() {
+// gives each thread its own generator: sharing one between threads would be
+// a data race (and a lock around it would be slow).
+inline std::mt19937& thread_rng() {
     thread_local std::mt19937 generator{42};
-    thread_local std::uniform_real_distribution<double> distribution{0.0, 1.0};
-    return distribution(generator);
+    return generator;
+}
+
+// Restarts the calling thread's generator from `seed`. The renderer reseeds
+// at the start of every image row, so each row's random numbers are the same
+// no matter which thread renders it: the output is identical for any thread
+// count.
+inline void seed_thread_rng(std::uint32_t seed) { thread_rng().seed(seed); }
+
+// Returns a uniformly distributed random number in [0, 1).
+inline double random_double() {
+    // A distribution object is cheap to create; making a fresh one each call
+    // means no hidden state survives a reseed.
+    return std::uniform_real_distribution<double>{0.0, 1.0}(thread_rng());
 }
 
 // Returns a uniformly distributed random number in [min, max).

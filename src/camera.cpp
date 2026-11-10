@@ -1,15 +1,24 @@
 #include "rt/camera.h"
 
 #include <algorithm>
+#include <atomic>
+#include <cstdint>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <thread>
+#include <vector>
 
 #include "rt/material.h"
 #include "rt/random.h"
 #include "rt/util.h"
 
 namespace rt {
+
+namespace {
+// Arbitrary starting seed; row y uses kBaseSeed + y.
+constexpr std::uint32_t kBaseSeed = 42;
+}  // namespace
 
 Camera::Camera(const CameraSettings& settings) : settings_{settings} {
     if (settings.image_width <= 0) {
@@ -48,27 +57,76 @@ Ray Camera::ray_through(double u, double v) const {
     return Ray{origin_, target - origin_};
 }
 
-Image Camera::render(const Hittable& world) const {
+Image Camera::render(const Hittable& world, int thread_count) const {
+    if (thread_count < 1) {
+        throw std::invalid_argument("thread_count must be at least 1");
+    }
+    const int height = image_height_;
+    Image image{settings_.image_width, height};
+
+    // A shared "next row to render" counter. std::atomic makes next_row++ a
+    // single indivisible step, so two threads can never grab the same row.
+    std::atomic<int> next_row{0};
+
+    // Each worker keeps taking rows until none are left (dynamic scheduling:
+    // threads that get cheap rows simply take more of them).
+    // [&] captures world, image, next_row etc. by reference. That is safe
+    // here because every thread is joined before this function returns.
+    const auto worker = [&] {
+        for (int y = next_row++; y < height; y = next_row++) {
+            render_row(world, image, y);
+        }
+    };
+
+    // No point having more threads than rows.
+    const int n_threads = std::min(thread_count, height);
+    {
+        std::vector<std::thread> helpers;
+        // RAII guard: joins every helper thread when this block ends, even if
+        // an exception is thrown. Destroying a std::thread that is still
+        // joinable calls std::terminate, so this matters.
+        // (C++20's std::jthread does this automatically.)
+        struct JoinAll {
+            std::vector<std::thread>& threads;
+            ~JoinAll() {
+                for (auto& t : threads) {
+                    if (t.joinable()) {
+                        t.join();
+                    }
+                }
+            }
+        } join_all{helpers};
+
+        helpers.reserve(static_cast<std::size_t>(n_threads - 1));
+        for (int i = 1; i < n_threads; ++i) {
+            helpers.emplace_back(worker);  // start a thread running worker()
+        }
+        worker();  // the calling thread works too, instead of just waiting
+    }  // join_all's destructor waits for every helper to finish here
+
+    return image;  // returned by move (or constructed in place), not copied
+}
+
+void Camera::render_row(const Hittable& world, Image& image, int y) const {
     const int width = settings_.image_width;
     const int height = image_height_;
     const int samples = settings_.samples_per_pixel;
-    Image image{width, height};
 
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            Color sum{0.0, 0.0, 0.0};
-            for (int s = 0; s < samples; ++s) {
-                // With one sample, aim at the pixel centre; otherwise pick a
-                // random point inside the pixel.
-                const double dx = samples == 1 ? 0.5 : random_double();
-                const double dy = samples == 1 ? 0.5 : random_double();
-                const Ray ray = ray_through((x + dx) / width, (y + dy) / height);
-                sum += ray_color(ray, world, settings_.max_depth);
-            }
-            image.at(x, y) = sum / static_cast<double>(samples);
+    // Same seed for the same row every time -> reproducible output.
+    seed_thread_rng(kBaseSeed + static_cast<std::uint32_t>(y));
+
+    for (int x = 0; x < width; ++x) {
+        Color sum{0.0, 0.0, 0.0};
+        for (int s = 0; s < samples; ++s) {
+            // With one sample, aim at the pixel centre; otherwise pick a
+            // random point inside the pixel.
+            const double dx = samples == 1 ? 0.5 : random_double();
+            const double dy = samples == 1 ? 0.5 : random_double();
+            const Ray ray = ray_through((x + dx) / width, (y + dy) / height);
+            sum += ray_color(ray, world, settings_.max_depth);
         }
+        image.at(x, y) = sum / static_cast<double>(samples);
     }
-    return image;  // returned by move (or constructed in place), not copied
 }
 
 Color ray_color(const Ray& ray, const Hittable& world, int depth) {
