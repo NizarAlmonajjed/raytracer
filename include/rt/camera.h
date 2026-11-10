@@ -14,6 +14,7 @@ struct CameraSettings {
     double aspect_ratio{16.0 / 9.0};
     int image_width{400};
     int samples_per_pixel{100};     // random rays per pixel (anti-aliasing)
+    int max_depth{50};              // max bounces per ray before giving up
     double vertical_fov_deg{90.0};  // vertical field of view, in degrees
     Point3 look_from{0.0, 0.0, 0.0};
     Point3 look_at{0.0, 0.0, -1.0};
@@ -24,7 +25,8 @@ class Camera {
 public:
     // `explicit` stops the compiler from silently converting a CameraSettings
     // into a Camera, e.g. when passing one to a function expecting a Camera.
-    // Throws std::invalid_argument for a non-positive width or sample count.
+    // Throws std::invalid_argument for a non-positive width, sample count or
+    // max depth.
     explicit Camera(const CameraSettings& settings);
 
     int image_width() const { return settings_.image_width; }
@@ -46,8 +48,9 @@ private:
     Vec3 vertical_;     // top edge -> bottom edge of the viewport
 };
 
-// The colour seen along `ray`: the hit surface's normal as a colour, or the
-// sky gradient if nothing is hit.
-Color ray_color(const Ray& ray, const Hittable& world);
+// The (linear) colour of light arriving along `ray`. Follows the ray as it
+// bounces off materials, up to `depth` more bounces; returns black when the
+// bounce budget runs out or the ray is absorbed, and the sky when it escapes.
+Color ray_color(const Ray& ray, const Hittable& world, int depth);
 
 }  // namespace rt

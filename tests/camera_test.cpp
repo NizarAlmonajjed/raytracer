@@ -76,10 +76,10 @@ TEST(Camera, RenderOfEmptyWorldIsSky) {
 TEST(RayColor, MissReturnsSkyGradient) {
     const rt::HittableList empty;
     // Straight up: fully sky blue.
-    EXPECT_TRUE(VecNear(rt::ray_color(rt::Ray{Point3{}, Vec3{0, 1, 0}}, empty),
+    EXPECT_TRUE(VecNear(rt::ray_color(rt::Ray{Point3{}, Vec3{0, 1, 0}}, empty, 10),
                         rt::Color{0.5, 0.7, 1.0}));
     // Straight down: white.
-    EXPECT_TRUE(VecNear(rt::ray_color(rt::Ray{Point3{}, Vec3{0, -1, 0}}, empty),
+    EXPECT_TRUE(VecNear(rt::ray_color(rt::Ray{Point3{}, Vec3{0, -1, 0}}, empty, 10),
                         rt::Color{1.0, 1.0, 1.0}));
 }
 

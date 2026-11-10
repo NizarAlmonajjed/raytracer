@@ -9,6 +9,10 @@ constexpr double kPi = 3.14159265358979323846;
 
 constexpr double degrees_to_radians(double degrees) { return degrees * kPi / 180.0; }
 
+// Converts a linear light value to gamma-encoded (gamma 2), which is what
+// image viewers expect. Without it, renders look too dark.
+double linear_to_gamma(double linear);
+
 // Returns the greeting printed by the program on startup.
 std::string greeting();
 

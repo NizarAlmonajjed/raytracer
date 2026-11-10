@@ -20,7 +20,9 @@ void write_ppm(std::ostream& out, const Image& image) {
     for (int y = 0; y < image.height(); ++y) {
         for (int x = 0; x < image.width(); ++x) {
             const Color& c = image.at(x, y);
-            out << to_byte(c.x) << ' ' << to_byte(c.y) << ' ' << to_byte(c.z) << '\n';
+            out << to_byte(linear_to_gamma(c.x)) << ' '
+                << to_byte(linear_to_gamma(c.y)) << ' '
+                << to_byte(linear_to_gamma(c.z)) << '\n';
         }
     }
 }

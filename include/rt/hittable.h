@@ -7,12 +7,22 @@
 
 namespace rt {
 
+// Forward declaration: tells the compiler "Material is a class" without
+// including its header. Enough to declare a pointer to it, and it avoids a
+// circular include (material.h needs HitRecord from this file).
+class Material;
+
 // Everything we need to know about where a ray hit a surface.
 struct HitRecord {
     Point3 point;           // where the ray hit
     Vec3 normal;            // unit normal, always pointing AGAINST the ray
     double t{0.0};          // ray parameter: point == ray.at(t)
     bool front_face{true};  // true if the ray hit the outside of the surface
+
+    // The surface's material. A raw pointer here means "non-owning": the
+    // object that was hit owns its material (via shared_ptr) and outlives this
+    // record. Null means the surface absorbs all light.
+    const Material* material{nullptr};
 
     // Given the surface's OUTWARD unit normal, decides which side the ray hit
     // and stores a normal that points against the ray.

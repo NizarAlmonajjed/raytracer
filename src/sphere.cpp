@@ -5,8 +5,8 @@
 
 namespace rt {
 
-Sphere::Sphere(const Point3& center, double radius)
-    : center_{center}, radius_{radius} {
+Sphere::Sphere(const Point3& center, double radius, std::shared_ptr<Material> material)
+    : center_{center}, radius_{radius}, material_{std::move(material)} {
     if (radius <= 0.0) {
         throw std::invalid_argument("Sphere radius must be positive");
     }
@@ -22,6 +22,7 @@ std::optional<HitRecord> Sphere::hit(const Ray& ray, double t_min,
     rec.t = *t;
     rec.point = ray.at(*t);
     rec.set_face_normal(ray, sphere_normal(*this, rec.point));
+    rec.material = material_.get();  // non-owning pointer to our material
     return rec;
 }
 

@@ -5,6 +5,7 @@
 #include <limits>
 #include <stdexcept>
 
+#include "rt/material.h"
 #include "rt/random.h"
 #include "rt/util.h"
 
@@ -16,6 +17,9 @@ Camera::Camera(const CameraSettings& settings) : settings_{settings} {
     }
     if (settings.samples_per_pixel <= 0) {
         throw std::invalid_argument("samples_per_pixel must be positive");
+    }
+    if (settings.max_depth <= 0) {
+        throw std::invalid_argument("max_depth must be positive");
     }
     image_height_ = std::max(1, static_cast<int>(settings.image_width / settings.aspect_ratio));
 
@@ -59,7 +63,7 @@ Image Camera::render(const Hittable& world) const {
                 const double dx = samples == 1 ? 0.5 : random_double();
                 const double dy = samples == 1 ? 0.5 : random_double();
                 const Ray ray = ray_through((x + dx) / width, (y + dy) / height);
-                sum += ray_color(ray, world);
+                sum += ray_color(ray, world, settings_.max_depth);
             }
             image.at(x, y) = sum / static_cast<double>(samples);
         }
@@ -67,17 +71,33 @@ Image Camera::render(const Hittable& world) const {
     return image;  // returned by move (or constructed in place), not copied
 }
 
-Color ray_color(const Ray& ray, const Hittable& world) {
+Color ray_color(const Ray& ray, const Hittable& world, int depth) {
     constexpr double kInfinity = std::numeric_limits<double>::infinity();
+    // Ignore hits closer than this, so a bounced ray doesn't immediately
+    // re-hit the surface it left because of rounding error ("shadow acne").
+    constexpr double kTMin = 0.001;
+
+    if (depth <= 0) {
+        return Color{0.0, 0.0, 0.0};  // bounce budget exhausted: no light
+    }
 
     // world.hit() is a virtual call: it runs HittableList::hit, Sphere::hit,
     // or whatever the real type is.
-    if (const auto rec = world.hit(ray, 0.0, kInfinity)) {
-        // Map each normal component from [-1, 1] to a colour in [0, 1].
-        return 0.5 * (rec->normal + Color{1.0, 1.0, 1.0});
+    if (const auto rec = world.hit(ray, kTMin, kInfinity)) {
+        if (rec->material == nullptr) {
+            return Color{0.0, 0.0, 0.0};
+        }
+        // Another virtual call: Lambertian, Metal or Dielectric decides.
+        if (const auto scatter = rec->material->scatter(ray, *rec)) {
+            // Recursion: the light we see is the light the bounced ray sees,
+            // tinted by the surface.
+            return scatter->attenuation * ray_color(scatter->scattered, world, depth - 1);
+        }
+        return Color{0.0, 0.0, 0.0};  // absorbed
     }
 
     // Missed everything: sky gradient, white at the bottom to blue at the top.
+    // The sky is our only light source.
     const Vec3 dir = unit_vector(ray.direction());
     const double a = 0.5 * (dir.y + 1.0);
     return (1.0 - a) * Color{1.0, 1.0, 1.0} + a * Color{0.5, 0.7, 1.0};

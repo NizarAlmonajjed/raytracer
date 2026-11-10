@@ -48,6 +48,12 @@ public:
 
     double length_squared() const { return x * x + y * y + z * z; }
     double length() const { return std::sqrt(length_squared()); }
+
+    // True if every component is extremely close to zero.
+    bool near_zero() const {
+        constexpr double kEps = 1e-8;
+        return std::abs(x) < kEps && std::abs(y) < kEps && std::abs(z) < kEps;
+    }
 };
 
 // Aliases make intent clear at the call site; they are the same type.
@@ -91,6 +97,36 @@ inline Vec3 cross(const Vec3& a, const Vec3& b) {
 // Returns a vector with the same direction as v and length 1.
 // Precondition: v is not the zero vector.
 inline Vec3 unit_vector(const Vec3& v) { return v / v.length(); }
+
+// Mirror reflection of direction v off a surface with unit normal n:
+//
+//   reflect(v, n) = v - 2 * dot(v, n) * n
+//
+// dot(v, n) * n is the part of v going into the surface; subtracting it
+// twice flips that part so it points out instead.
+//
+// Example: reflect({1,-1,0}, {0,1,0}) == {1,1,0}
+inline Vec3 reflect(const Vec3& v, const Vec3& n) {
+    // TODO(you): fill in the blanks, then delete the (void) lines and the
+    // `return {};` below.
+    //
+    //   return v - 2.0 * dot(___, ___) * ___;
+    //
+    // Tests: tests/material_test.cpp, the "Reflect" and "MetalReflect" tests.
+    (void)v;
+    (void)n;
+    return {};
+}
+
+// Refracts unit direction uv through a surface with unit normal n (pointing
+// against uv), using Snell's law. eta_ratio = eta_incident / eta_transmitted.
+inline Vec3 refract(const Vec3& uv, const Vec3& n, double eta_ratio) {
+    const double cos_theta = std::fmin(dot(-uv, n), 1.0);
+    // Split the outgoing ray into parts perpendicular and parallel to n.
+    const Vec3 out_perp = eta_ratio * (uv + cos_theta * n);
+    const Vec3 out_parallel = -std::sqrt(std::abs(1.0 - out_perp.length_squared())) * n;
+    return out_perp + out_parallel;
+}
 
 // Lets you write: std::cout << v;  -> "(1, 2, 3)"
 inline std::ostream& operator<<(std::ostream& out, const Vec3& v) {

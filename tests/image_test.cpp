@@ -41,5 +41,5 @@ TEST(WritePpm, WritesHeaderAndPixelsTopRowFirst) {
               "2 1\n"
               "255\n"
               "255 0 0\n"
-              "0 128 255\n");
+              "0 181 255\n");  // 0.5 linear -> sqrt(0.5) = 0.707 -> 181
 }

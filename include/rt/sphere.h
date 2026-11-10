@@ -1,8 +1,10 @@
 #pragma once
 
+#include <memory>
 #include <optional>
 
 #include "rt/hittable.h"
+#include "rt/material.h"
 #include "rt/ray.h"
 #include "rt/vec3.h"
 
@@ -13,7 +15,10 @@ namespace rt {
 class Sphere : public Hittable {
 public:
     // Throws std::invalid_argument if radius is not positive.
-    Sphere(const Point3& center, double radius);
+    // The material is shared: many spheres can use the same Material object.
+    // Without a material the sphere absorbs all light (renders black).
+    Sphere(const Point3& center, double radius,
+           std::shared_ptr<Material> material = nullptr);
 
     const Point3& center() const { return center_; }
     double radius() const { return radius_; }
@@ -26,6 +31,7 @@ public:
 private:
     Point3 center_;
     double radius_;
+    std::shared_ptr<Material> material_;
 };
 
 // Returns the smallest t in the open interval (t_min, t_max) at which `ray`

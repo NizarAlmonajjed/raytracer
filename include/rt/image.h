@@ -30,7 +30,8 @@ private:
     std::vector<Color> pixels_;
 };
 
-// Writes the image in plain-text PPM (P3) format:
+// Writes the image in plain-text PPM (P3) format, gamma-correcting each
+// linear colour channel on the way out:
 //   P3
 //   <width> <height>
 //   255

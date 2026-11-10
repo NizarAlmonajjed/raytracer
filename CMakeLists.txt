@@ -21,6 +21,7 @@ add_library(rtcore
   src/hittable.cpp
   src/hittable_list.cpp
   src/image.cpp
+  src/material.cpp
   src/sphere.cpp
   src/util.cpp
 )
@@ -52,6 +53,7 @@ if(RT_BUILD_TESTS)
     tests/camera_test.cpp
     tests/hittable_test.cpp
     tests/image_test.cpp
+    tests/material_test.cpp
     tests/ray_test.cpp
     tests/sphere_test.cpp
     tests/util_test.cpp
